@@ -1,0 +1,35 @@
+name: Template acceptance
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: template-acceptance-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  render:
+    name: Render template
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+      - name: Render and validate
+        run: |
+          destination="$RUNNER_TEMP/render"
+          uvx --from copier copier copy --vcs-ref HEAD --defaults \
+            --data project_name='Acceptance Infrastructure' . "$destination"
+          test ! -e "$destination/_components"
+          if find -L "$destination" -type l -print -quit | grep -q .; then exit 1; fi
+          if grep -RIlE '^(<<<<<<<|=======|>>>>>>>)' "$destination" >/dev/null; then exit 1; fi
+          test -f "$destination/.copier-answers.yml"
+          test -f "$destination/.github/pull_request_template.md"
