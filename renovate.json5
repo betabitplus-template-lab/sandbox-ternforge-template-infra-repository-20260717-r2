@@ -1,5 +1,6 @@
 {
   "automerge": false,
+  "platformCommit": "disabled",
   "enabledManagers": ["git-submodules"],
   "git-submodules": {"enabled": true}
 }
